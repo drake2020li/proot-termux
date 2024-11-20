@@ -43,6 +43,34 @@
 
 #include "compat.h"
 
+#define _GNU_SOURCE
+#include <stdlib.h>
+#include <execinfo.h>
+
+// 自定义的assert宏
+#undef assert
+#define assert(expr) \
+    (void)((expr) || (print_backtrace_and_abort(#expr, __FILE__, __LINE__), 0))
+
+void print_backtrace_and_abort(const char *expr, const char *file, int line) {
+    void *buffer[100];
+    int nptrs = backtrace(buffer, 100);
+    char **symbols = backtrace_symbols(buffer, nptrs);
+
+    if (symbols == NULL) {
+        perror("backtrace_symbols");
+        abort();
+    }
+
+    fprintf(stderr, "Assertion failed: %s, file %s, line %d\n", expr, file, line);
+    for (int i = 0; i < nptrs; i++) {
+        fprintf(stderr, "%s\n", symbols[i]);
+    }
+
+    free(symbols);
+    abort();
+}
+
 /**
  * Copy in @result the concatenation of several paths (@number_paths)
  * and adds a path separator ('/') in between when needed. This
