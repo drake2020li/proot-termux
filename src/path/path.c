@@ -44,9 +44,8 @@
 #include "compat.h"
 
 #include <stdlib.h>
-#include <execinfo.h>  // backtrace 和 backtrace_symbols
 
-// 取消定义已有的 assert 宏，并定义一个新的 assert 宏
+// 定义自定义的assert宏
 #undef assert
 #define assert(expr) \
     do { \
@@ -54,7 +53,7 @@
             fprintf(stderr, "Assertion failed: %s, function: %s, file: %s, line: %d\n", \
                     #expr, __FUNCTION__, __FILE__, __LINE__); \
             \
-            /* 获取调用堆栈 */ \
+            /* 获取堆栈跟踪信息 */ \
             void* callstack[128]; \
             int frames = backtrace(callstack, 128); \
             char** symbols = backtrace_symbols(callstack, frames); \
