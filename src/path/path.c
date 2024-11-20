@@ -545,7 +545,7 @@ Comparison compare_paths2(const char *path1, size_t length1, const char *path2, 
 #endif
 	//assert(length1 > 0);
 	//assert(length2 > 0);
-	if (!(length1 > 0 && length2 > 0)) {
+	if ( true || !(length1 > 0 && length2 > 0)) {
 		printf("path1(%s), length1(%zu)\n", path1, length1);
 		printf("path2(%s), length2(%zu)\n", path2, length2);
 		abort();
