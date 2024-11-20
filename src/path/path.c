@@ -43,32 +43,6 @@
 
 #include "compat.h"
 
-#include <stdlib.h>
-#include <execinfo.h>  // backtrace 和 backtrace_symbols
-
-// 取消定义已有的 assert 宏，并定义一个新的 assert 宏
-#undef assert
-#define assert(expr) \
-    do { \
-        if (!(expr)) { \
-            fprintf(stderr, "Assertion failed: %s, function: %s, file: %s, line: %d\n", \
-                    #expr, __FUNCTION__, __FILE__, __LINE__); \
-            \
-            /* 获取调用堆栈 */ \
-            void* callstack[128]; \
-            int frames = backtrace(callstack, 128); \
-            char** symbols = backtrace_symbols(callstack, frames); \
-            if (symbols != NULL) { \
-                for (int i = 0; i < frames; i++) { \
-                    fprintf(stderr, "%s\n", symbols[i]); \
-                } \
-                free(symbols); \
-            } \
-            \
-            abort(); \
-        } \
-    } while(0)
-
 /**
  * Copy in @result the concatenation of several paths (@number_paths)
  * and adds a path separator ('/') in between when needed. This
@@ -569,8 +543,13 @@ Comparison compare_paths2(const char *path1, size_t length1, const char *path2, 
 	assert(length(path1) == length1);
 	assert(length(path2) == length2);
 #endif
-	assert(length1 > 0);
-	assert(length2 > 0);
+	#assert(length1 > 0);
+	#assert(length2 > 0);
+	if (!(length1 > 0 && length2 > 0)) {
+		printf("path1(%s), length1(%zu)\n", path1, length1);
+		printf("path2(%s), length2(%zu)\n", path2, length2);
+		abort();
+	}
 
 	if (!length1 || !length2) {
 		return PATHS_ARE_NOT_COMPARABLE;
