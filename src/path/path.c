@@ -43,31 +43,32 @@
 
 #include "compat.h"
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <execinfo.h>
+#include <unwind.h>
+#include <dlfcn.h>
 
-// 自定义的assert宏
+// 自定义assert宏
 #undef assert
 #define assert(expr) \
-    (void)((expr) || (print_backtrace_and_abort(#expr, __FILE__, __LINE__), 0))
+    (void)((expr) || (custom_assert_failed(#expr, __FILE__, __LINE__), 0))
 
-void print_backtrace_and_abort(const char *expr, const char *file, int line) {
-    void *buffer[100];
-    int nptrs = backtrace(buffer, 100);
-    char **symbols = backtrace_symbols(buffer, nptrs);
-
-    if (symbols == NULL) {
-        perror("backtrace_symbols");
-        abort();
+// 用于打印调用堆栈的函数
+static _Unwind_Reason_Code unwind_callback(struct _Unwind_Context *context, void *arg) {
+    uintptr_t pc = _Unwind_GetIP(context);
+    if (pc) {
+        Dl_info info;
+        if (dladdr((void *)pc, &info) && info.dli_sname) {
+            printf("Backtrace: %s (%s)", info.dli_fname, info.dli_sname);
+        } else {
+            printf("Backtrace: %p (unknown)", (void *)pc);
+        }
     }
+    return _URC_NO_REASON;
+}
 
-    fprintf(stderr, "Assertion failed: %s, file %s, line %d\n", expr, file, line);
-    for (int i = 0; i < nptrs; i++) {
-        fprintf(stderr, "%s\n", symbols[i]);
-    }
-
-    free(symbols);
+// 当assert失败时调用的函数
+void custom_assert_failed(const char *expr, const char *file, int line) {
+    printf("Assertion failed: %s, file %s, line %d", expr, file, line);
+    _Unwind_Backtrace(unwind_callback, NULL);
     abort();
 }
 
