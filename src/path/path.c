@@ -43,34 +43,31 @@
 
 #include "compat.h"
 
-#include <unwind.h>
-#include <dlfcn.h>
+#include <stdlib.h>
+#include <execinfo.h>  // backtrace 和 backtrace_symbols
 
-// 自定义assert宏
+// 取消定义已有的 assert 宏，并定义一个新的 assert 宏
 #undef assert
 #define assert(expr) \
-    (void)((expr) || (custom_assert_failed(#expr, __FILE__, __LINE__), 0))
-
-// 用于打印调用堆栈的函数
-static _Unwind_Reason_Code unwind_callback(struct _Unwind_Context *context, void *arg) {
-    uintptr_t pc = _Unwind_GetIP(context);
-    if (pc) {
-        Dl_info info;
-        if (dladdr((void *)pc, &info) && info.dli_sname) {
-            printf("Backtrace: %s (%s)", info.dli_fname, info.dli_sname);
-        } else {
-            printf("Backtrace: %p (unknown)", (void *)pc);
-        }
-    }
-    return _URC_NO_REASON;
-}
-
-// 当assert失败时调用的函数
-void custom_assert_failed(const char *expr, const char *file, int line) {
-    printf("Assertion failed: %s, file %s, line %d", expr, file, line);
-    _Unwind_Backtrace(unwind_callback, NULL);
-    abort();
-}
+    do { \
+        if (!(expr)) { \
+            fprintf(stderr, "Assertion failed: %s, function: %s, file: %s, line: %d\n", \
+                    #expr, __FUNCTION__, __FILE__, __LINE__); \
+            \
+            /* 获取调用堆栈 */ \
+            void* callstack[128]; \
+            int frames = backtrace(callstack, 128); \
+            char** symbols = backtrace_symbols(callstack, frames); \
+            if (symbols != NULL) { \
+                for (int i = 0; i < frames; i++) { \
+                    fprintf(stderr, "%s\n", symbols[i]); \
+                } \
+                free(symbols); \
+            } \
+            \
+            abort(); \
+        } \
+    } while(0)
 
 /**
  * Copy in @result the concatenation of several paths (@number_paths)
