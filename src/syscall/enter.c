@@ -606,6 +606,7 @@ int translate_syscall_enter(Tracee *tracee)
 		 * (Otherwise it could break tracee memory access)  */
 		if (peek_reg(tracee, CURRENT, SYSARG_1) == PR_SET_DUMPABLE) {
 			set_sysnum(tracee, PR_void);
+			poke_reg(tracee, SYSARG_RESULT, 0);
 			status = 0;
 		}
 		break;
